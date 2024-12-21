@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pl@yC#ckersW1thM3</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #283747;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .game-container {
+            width: 600px;
+            height: 700px;
+            margin: 20px;
+            background-color: #5d6d7e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: white;
+        }
+
+        .error {
+            color: white;
+            text-align: center;
+        }
+
+        .board {
+            gap: 2px;
+            width: 100%;
+            height: 100%;
+            max-height: 480px;
+            max-width: 480px;
+            margin: 0 auto;
+            border: 2px solid #333;
+        }
+
+        .row:nth-child(odd) .cell:nth-child(even) {
+            background-color: rgb(228, 218, 218);
+        }
+
+        .row:nth-child(even) .cell:nth-child(odd) {
+            background-color: rgb(228, 218, 218);
+        }
+
+        .row:nth-child(odd) .cell:nth-child(odd) {
+            background-color: #c46a20b4;
+        }
+
+        .row:nth-child(even) .cell:nth-child(even) {
+            background-color: #c46a20b4;
+        }
+        
+        .row .cell.white-piece .piece {
+            background-color: white;
+            border-radius: 50%;
+            margin: auto;
+            width: 70%;
+            height: 70%;
+        }
+
+        .row .cell.black-piece .piece {
+            background-color: black;
+            border-radius: 50%;
+            margin: auto;
+            width: 70%;
+            height: 70%;
+        }
+
+        .row .cell.white-queen .piece {
+            background-color: rgb(238, 204, 129);
+            border-radius: 50%;
+            margin: auto;
+            width: 70%;
+            height: 70%;
+        }
+
+        .row .cell.black-queen .piece {
+            background-color: rgb(95, 13, 13);
+            border-radius: 50%;
+            margin: auto;
+            width: 70%;
+            height: 70%;
+        }
+
+        .cell.selected {
+            outline: 3px solid red;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .controls button {
+            margin-left: auto;
+            margin-right: auto;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .controls button:hover {
+            background-color: #45a049;
+        }
+        .status {
+            text-align: center;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <h1>Pl@yC#ckersW1thM3</h1>
+    <h3 class="error">Try to beat me xoxo</h3>
+
+    <table class="board">
+        {% for row in game_state['board'] %}
+            <tr class="row">
+                {% for cell in row %}
+                    <td class="cell {% if cell == 1 %}white-piece{% elif cell == 0 %}black-piece{% elif cell == 3 %}white-queen{% elif cell == 2 %}black-queen{% endif %}">
+                        <div class="piece">
+                        </div>
+                    </td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </table>
+
+    <div class="status">
+        <p>Current Turn: {% if game_state['current_turn'] == 1 %} White {% else %} Black {% endif %}</p>
+    </div>
+
+    <div class="controls">
+        <button class="newGame">Play another</button>
+    </div>
+
+</div>
+
+<script>
+    let selectedCell = null; 
+    let moveStart = null; 
+    let moveEnd = null; 
+
+    if (document.querySelector('.status').textContent.includes("White")) {
+        getComputerMove()
+    }
+
+    document.querySelector('.newGame').addEventListener('click', () => {
+        newGame()
+    });
+
+    document.querySelectorAll('.cell').forEach(cell => {
+        cell.addEventListener('click', () => {
+            if (!moveStart) {
+                if (cell.classList.contains('white-piece') ||
+                 cell.classList.contains('black-piece') ||
+                  cell.classList.contains('white-queen') ||
+                   cell.classList.contains('black-queen')) {
+                    moveStart = cell;
+                    moveStart.classList.add('selected');
+                }
+            } 
+            else if (!moveEnd) {
+                if (cell !== moveStart) {
+                    moveEnd = cell;
+                    moveEnd.classList.add('selected');
+
+                    const startRow = moveStart.parentElement.rowIndex;
+                    const startCol = moveStart.cellIndex;
+                    const endRow = moveEnd.parentElement.rowIndex;
+                    const endCol = moveEnd.cellIndex;
+
+                    const move = `${String.fromCharCode(97 + startCol)}${startRow + 1}-${String.fromCharCode(97 + endCol)}${endRow + 1}`;
+                    console.log(move);
+
+                    updateGameState(move);
+
+                    // Reset for the next move
+                    moveStart = null;
+                    moveEnd = null;
+                    document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected'));
+                }
+            }
+        });
+    });
+
+
+    function getComputerMove() {
+        fetch('/evaluate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ depth: 3 })
+        })
+        .then(response => response.json())
+        .then(data => {
+            updateGameState(data.move)
+        })
+    }
+
+    function newGame() {
+        fetch('/clear', {
+            method: 'GET'
+        })
+        window.location = window.location.href
+    }
+
+    function updateGameState(move) {
+        fetch('/make_move', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ move: move })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                let error_box = document.querySelector('.error');
+                error_box.innerHTML = data.error;
+                error_box.style.color = "red";
+            }
+            else {
+                let error_box = document.querySelector('.error');
+                error_box.innerHTML = "Try to beat me xoxo";
+                error_box.style.color = "white";
+            }
+            updateBoard(data.game_state);
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function updateBoard(gameState) {
+        const board = document.querySelector('.board');
+        const rows = board.querySelectorAll('.row');
+
+        gameState.board.forEach((row, rowIndex) => {
+            row.forEach((cell, colIndex) => {
+                const cellElement = rows[rowIndex].children[colIndex];
+                cellElement.classList.remove('white-piece', 'black-piece', 'white-queen', 'black-queen'); // Remove previous pieces
+
+                // Add the correct piece class based on the game state
+                if (cell === 1) {
+                    cellElement.classList.add('white-piece');
+                } else if (cell === 0) {
+                    cellElement.classList.add('black-piece');
+                } else if (cell === 3) {
+                    cellElement.classList.add('white-queen');
+                } else if (cell === 2) {
+                    cellElement.classList.add('black-queen');
+                }
+            });
+        });
+
+        if (gameState.current_turn === 1) {
+            getComputerMove()
+        }
+
+        const status = document.querySelector('.status p');
+        status.textContent = `Current Turn: ${gameState.current_turn === 1 ? 'White' : 'Black'}`;
+    }
+
+</script>
+
+</body>
+</html>

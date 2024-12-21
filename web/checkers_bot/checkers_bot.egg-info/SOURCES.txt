@@ -1,0 +1,5 @@
+setup.py
+checkers_bot.egg-info/PKG-INFO
+checkers_bot.egg-info/SOURCES.txt
+checkers_bot.egg-info/dependency_links.txt
+checkers_bot.egg-info/top_level.txt
