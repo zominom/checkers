@@ -243,7 +243,7 @@ class Game:
                 else:
                     queen_found = queen_found or self.BLACK_QUEEN in row
 
-                if player_found and queen_found:
+                if player_found or queen_found:
                     break
             
             if not player_found and not queen_found:
